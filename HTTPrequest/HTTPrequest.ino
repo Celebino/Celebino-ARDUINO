@@ -1,6 +1,15 @@
 
 #include <SPI.h>
 #include <Ethernet.h>
+#include <dht.h>
+
+#define umid_pin A0 //Humidity analogic pin connects to A0
+#define dht_pin A1 //DHT data pin connects to A1
+#define lum_pin A2 //Luminosity analogic pin connects to A2
+
+dht DHT; //Starting the DHT sensor
+int umid_value; //Var of humidity
+int lum_value; //Var of luminosity
 
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -14,6 +23,9 @@ EthernetClient client;
 
 void setup() {
   Serial.begin(9600);
+  pinMode(umid_pin, INPUT);
+  pinMode(dht_pin, INPUT);
+  pinMode(lum_pin, INPUT);
   while (!Serial) {
     ; 
   }
@@ -29,7 +41,9 @@ void setup() {
   if (client.connect(server, 8080)) {
     Serial.println("connected");
     String PostData = sensor();
-    client.println("POST /primeiro/primeiro HTTP/1.1");
+    Serial.println(PostData);
+    Serial.println("OKOK");
+    client.println("POST /Celebino/gardenstatus/ HTTP/1.1");
     client.println("Host: 192.168.1.9");
     client.println("User-Agent: Arduino"); 
     client.println("Content-Type: application/json"); 
@@ -62,10 +76,12 @@ void loop() {
 }
 
 String sensor(){
-  int umidade = analogRead(A0);
-  umidade = map(umidade,0,1023,100,0); 
-  String json = "{\"umidade\":\"" + String(umidade) + "\"}";
+  umid_value = analogRead(umid_pin); //Reading the analogic humidity value
+  DHT.read11(dht_pin); //Reading the analogic temperature and air humidity values
+  lum_value = analogRead(lum_pin); //Reading the analogic luminosity value
+
+  umid_value = map(umid_value,0,1023,100,0); 
+  String json = "{\"garden\":{\"id\": 1}, \"soilHumidity\":" + String(umid_value) + ", \"airHumidity\":"+String(DHT.humidity)+", \"airTemperature\":"+String(DHT.temperature)+", \"sunLight\":"+String(lum_value)+"}";
   return json;     
 }
-
 
